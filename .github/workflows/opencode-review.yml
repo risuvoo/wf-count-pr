@@ -6,14 +6,24 @@ on:
 
 jobs:
   review:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Review same-repo PRs only, and never re-review a push made by this
+    # workflow's own bot. When the action commits to a PR it triggers a
+    # `synchronize` run whose actor is `opencode-agent[bot]`; the action
+    # permission-checks that actor as a collaborator, bots return "none",
+    # and the run fails with "does not have write permissions".
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'opencode-agent[bot]'
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write
-      contents: write
+      # Read-only review: the job must not be able to push commits.
+      contents: read
+      # Needed to post the review comment and interact with the PR.
       pull-requests: write
       issues: write
+      # Only used if the action falls back to OpenCode App token exchange.
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -25,16 +35,29 @@ jobs:
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          # Prefer the workflow's GITHUB_TOKEN instead of exchanging an OIDC
+          # token for an OpenCode App token: the App token path runs a
+          # collaborator permission check that cannot recognise bot actors.
+          # The v1.19.2 action reads `TOKEN`; the documented input maps to
+          # `USE_GITHUB_TOKEN`, so provide both to cover either code path.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: opencode-go/kimi-k2.7-code
+          use_github_token: true
           prompt: |
             Review this pull request for bugs, security issues,
             accessibility problems, and code quality.
 
             Check whether the changes meet the linked issue's
-            requirements and whether relevant tests pass.
+            requirements, and note whether existing checks cover them.
+            Judge this by reading the diff and the code: do not install
+            dependencies, run builds, or run any command that writes to
+            files.
 
             Report findings with file names and line references.
             Prioritize actionable findings and explain their impact.
-            Do not modify code, push commits, merge the pull request,
-            or deploy anything.
+
+            This is a read-only review: do not create, modify, stage,
+            commit, or push any file, and do not merge or deploy
+            anything.
