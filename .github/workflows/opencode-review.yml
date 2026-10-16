@@ -6,12 +6,21 @@ on:
 
 jobs:
   review:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Same-repo PRs only, and never for a push made by this workflow's own bot.
+    # The action commits its review to the PR branch when the working tree is
+    # dirty; that push fires a `synchronize` run whose actor is
+    # `opencode-agent[bot]`. The action permission-checks the triggering actor
+    # as a collaborator, bots resolve to "none", and the run fails with
+    # "does not have write permissions".
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'opencode-agent[bot]'
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write
-      contents: write
+      # Read-only review: the job must not push commits to the PR branch.
+      contents: read
+      # Post the review comment and react to the PR.
       pull-requests: write
       issues: write
 
@@ -25,16 +34,25 @@ jobs:
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          # Supplying the workflow token makes the action authenticate with
+          # GITHUB_TOKEN instead of an OpenCode App token. GITHUB_TOKEN obeys
+          # the `contents: read` permission above, so this is what actually
+          # makes the review read-only (an App token would ignore it).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: opencode-go/kimi-k2.7-code
+          use_github_token: true
           prompt: |
             Review this pull request for bugs, security issues,
             accessibility problems, and code quality.
 
-            Check whether the changes meet the linked issue's
-            requirements and whether relevant tests pass.
+            Check whether the changes meet the linked issue's requirements,
+            and note whether existing checks cover them. Judge this by reading
+            the diff and the code: do not install dependencies, run builds, or
+            run any command that writes to files.
 
-            Report findings with file names and line references.
-            Prioritize actionable findings and explain their impact.
-            Do not modify code, push commits, merge the pull request,
-            or deploy anything.
+            Report findings with file names and line references. Prioritize
+            actionable findings and explain their impact.
+
+            This is a read-only review: do not create, modify, stage, commit,
+            or push any file, and do not merge or deploy anything.
