@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "conventional-commit-message": {
+      "source": "conventional-changelog/conventional-changelog",
+      "sourceType": "github",
+      "skillPath": "skills/conventional-commit-message/SKILL.md",
+      "computedHash": "6ae250d67edc757e2e54163dae2d32f7b44bd8827231cbab2895db8fc0331ac3"
+    },
+    "front-end-developer": {
+      "source": "Mindrally/skills",
+      "sourceType": "github",
+      "skillPath": "front-end-developer/SKILL.md",
+      "computedHash": "54f448cbc0f0854284abd18a195220cf62ca13b0879005fac26040660ad287d5"
+    },
+    "review": {
+      "source": "wxmb01/review-skill",
+      "sourceType": "github",
+      "skillPath": "review/SKILL.md",
+      "computedHash": "a52d05f8f195b9ecb5a96ba36814673698b53ea8ec88c886d5918f14ef5924fb"
+    }
+  }
+}

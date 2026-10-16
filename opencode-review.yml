@@ -1,0 +1,40 @@
+name: OpenCode PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Review pull request
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/kimi-k2.7-code
+          prompt: |
+            Review this pull request for bugs, security issues,
+            accessibility problems, and code quality.
+
+            Check whether the changes meet the linked issue's
+            requirements and whether relevant tests pass.
+
+            Report findings with file names and line references.
+            Prioritize actionable findings and explain their impact.
+            Do not modify code, push commits, merge the pull request,
+            or deploy anything.
