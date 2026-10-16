@@ -18,6 +18,7 @@ export default function Home() {
         </p>
 
         <Counter label="Counter A" step={1} />
+        <Counter label="Counter B" step={2} />
         <Counter label="Counter C" step={3} />
       </main>
     </div>
